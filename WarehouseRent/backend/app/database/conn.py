@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 # TODO import from setup.py
 url = f"postgresql+asyncpg://{os.getenv('POSTGRES_USER')}:" \
     f"{os.getenv('POSTGRES_PASSWORD')}@" \
-    f"{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/" \
+    f"{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT', '5432')}/" \
     f"{os.getenv('POSTGRES_DB')}"
 
 
