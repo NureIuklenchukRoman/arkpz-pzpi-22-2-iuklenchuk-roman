@@ -1,6 +1,8 @@
 
 import os
 import jwt
+from typing import List
+
 from datetime import datetime, timedelta
 
 from fastapi import Depends, HTTPException, status
@@ -10,10 +12,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import User, get_db
+from app.database import User, get_db, UserRole
 from app.resources.auth.schema import TokenData
-from typing import List
-import loguru
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
@@ -24,9 +24,26 @@ REFRESH_TOKEN_EXPIRE_MINUTES = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES"))
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
+class Authorization:
+    def __init__(self, allowed_roles: List[UserRole] = []):
+        self.allowed_roles = allowed_roles
+
+    async def __call__(
+        self,
+        token: str = Depends(oauth2_scheme),
+        db: AsyncSession = Depends(get_db),
+    ):
+        user_data = await get_current_user(token, db)
+        if self.allowed_roles and (not user_data or user_data.role.name not in [role.name for role in self.allowed_roles]):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='This operation is forbidden for you',
+            )
+
+        return user_data
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)):
+async def get_current_user(token: str, db: AsyncSession):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -46,8 +63,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession
     except jwt.PyJWTError:
         raise credentials_exception
     query = select(User).filter(User.username == token_data.username)
-    existing_user_ = await db.execute(query)
-    user = existing_user_.scalar_one_or_none()
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
     if user is None:
         raise credentials_exception
 

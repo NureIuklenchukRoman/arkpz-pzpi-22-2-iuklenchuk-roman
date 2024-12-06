@@ -13,7 +13,7 @@ from .schema import (
 )
 
 from app.database import get_db
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, Authorization
 from app.database.models import Warehouse, UserRole
 from app.resources._shared.query import apply_filters_to_query
 
@@ -36,10 +36,7 @@ async def get_all_warehouses(
 
 
 @warehouse_router.post("/create", response_model=WarehouseCreateSchema)
-async def create_warehouse(warehouse: WarehouseCreateSchema, user=Depends(get_current_user), db=Depends(get_db)):
-    # if user.role != UserRole.ADMIN:
-    #     raise HTTPException(
-    #         status_code=403, detail="You are not authorized to create a warehouse")
+async def create_warehouse(warehouse: WarehouseCreateSchema, user = Depends(Authorization(allowed_roles=[UserRole.ADMIN])), db=Depends(get_db)):
     new_warehouse = Warehouse(
         name=warehouse.name,
         location=warehouse.location,
