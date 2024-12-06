@@ -5,12 +5,11 @@ from datetime import datetime
 from ..base_model import Base
 
 
-class Message(Base):
-    __tablename__ = "messages"
+class Lock(Base):
+    __tablename__ = "locks"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    text = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    warehouse_id = Column(Integer, ForeignKey("warehouses.id"), nullable=False)
+    access_key = Column(Text)
     
-    user = relationship("User", back_populates="messages")
+    warehouse = relationship("Warehouse", back_populates="lock")

@@ -16,3 +16,4 @@ class Warehouse(Base):
     premium_services = Column(String, nullable=True)  # JSON or comma-separated list
 
     rentals = relationship("Rental", back_populates="warehouse")
+    lock = relationship("Lock", uselist=False, back_populates="warehouse")

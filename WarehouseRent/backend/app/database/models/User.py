@@ -1,20 +1,26 @@
-from sqlalchemy import Column, Integer, Text, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, Text, Boolean, ForeignKey, Enum
 from ..base_model import Base
 from sqlalchemy import select
 from app.utils.verification import verify_password
 from sqlalchemy.orm import relationship
+from enum import Enum as PyEnum
 
+class UserRole(PyEnum):
+    ADMIN = 1
+    CUSTOMER = 2
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
-    name = Column(Text)
+    username = Column(Text)
     email = Column(Text, unique=True)
     phone_number = Column(Text)
     password = Column(Text)
-    
+    role = Column(Enum(UserRole), default=UserRole.CUSTOMER)
+
     rentals = relationship("Rental", back_populates="user")
+    messages = relationship("Message", back_populates="user") 
     
     @classmethod
     async def check_user_exists(cls, db, email):
