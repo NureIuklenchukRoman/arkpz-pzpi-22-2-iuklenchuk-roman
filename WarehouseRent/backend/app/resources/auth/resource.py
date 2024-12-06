@@ -61,6 +61,7 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return {"msg": "User created successfully", "user": new_user}
 
+
 @auth_router.post("/token", response_model=Token)
 async def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     user = await authenticate_user(form_data.username, form_data.password, db)
