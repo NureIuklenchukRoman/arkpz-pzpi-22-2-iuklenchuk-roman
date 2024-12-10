@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  app:
+  backend:
     build: ./backend  # Points to the backend directory
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload  # Correct path to main.py
     volumes:
@@ -39,6 +39,61 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
+    networks:
+      - app-network
+  
+  celery_worker:
+    image: warehouserent-backend
+    container_name: "celery-worker"
+    command: ["celery", "-A", "app.celery", "worker", "--loglevel=info"]
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - .env
+    networks:
+      - app-network
+    depends_on:
+      - backend
+      - redis
+
+  celery_beat:
+    image: warehouserent-backend
+    container_name: "celery-beat"
+    command: ["celery", "-A", "app.celery", "beat", "--loglevel=info"]
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - .env
+    networks:
+      - app-network
+    depends_on:
+      - redis
+      - backend
+
+  flower:
+    image: warehouserent-backend
+    container_name: "flower"
+    command: ["celery", "-A", "app.celery", "flower", "--loglevel=info", "--port=5555"]
+    environment:
+      - FLOWER_BROKER=redis://redis:6379/0
+    env_file:
+      - .env
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - backend
+    networks:
+      - app-network
+
+
+  redis:
+    image: "redis:latest"
+    container_name: "redis"
+    ports:
+      - "6379:6379"
     networks:
       - app-network
 

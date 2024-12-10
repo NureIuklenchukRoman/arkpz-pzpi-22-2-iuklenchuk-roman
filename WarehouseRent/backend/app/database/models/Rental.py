@@ -12,8 +12,8 @@ class Rental(Base):
     __tablename__ = "rentals"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    warehouse_id = Column(Integer, ForeignKey("warehouses.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", name="fk_rental_user"), nullable=False)
+    warehouse_id = Column(Integer, ForeignKey("warehouses.id", name="fk_rental_warehouse"), nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     total_price = Column(Float, nullable=False)

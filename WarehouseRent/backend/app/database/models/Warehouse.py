@@ -14,6 +14,8 @@ class Warehouse(Base):
     is_available = Column(Boolean, default=True)
     price_per_day = Column(Float, nullable=False)
     premium_services = Column(String, nullable=True)  # JSON or comma-separated list
+    owned_by = Column(Integer, ForeignKey("users.id", name="fk_warehouse_user"), nullable=False)
 
     rentals = relationship("Rental", back_populates="warehouse")
     lock = relationship("Lock", uselist=False, back_populates="warehouse")
+    owner = relationship("User", back_populates="warehouses")
