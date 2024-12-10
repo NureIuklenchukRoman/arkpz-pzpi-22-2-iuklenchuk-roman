@@ -9,7 +9,7 @@ from .schemas import RentalResponseSchema
 
 
 user_router = APIRouter(prefix="/user", tags=["user"])
-
+#comment
 
 @user_router.get("/my_rents", response_model=list[RentalResponseSchema])
 async def get_my_rent(user=Depends(Authorization()), db=Depends(get_db)):
