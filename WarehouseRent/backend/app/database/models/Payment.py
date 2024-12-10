@@ -13,7 +13,7 @@ class Payment(Base):
     __tablename__ = "payments"
 
     id = Column(Integer, primary_key=True, index=True)
-    rental_id = Column(Integer, ForeignKey("rentals.id"), nullable=False)
+    rental_id = Column(Integer, ForeignKey("rentals.id", name="fk_payment_rental"), nullable=False)
     amount = Column(Float, nullable=False)
     status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING)
     transaction_id = Column(String, unique=True, nullable=True)

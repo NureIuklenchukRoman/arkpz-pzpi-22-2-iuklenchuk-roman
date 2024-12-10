@@ -31,3 +31,8 @@ def apply_filters_to_query(query, Model, filter: dict):
                 query = query.filter(getattr(Model, column) == value)
                 
     return query
+
+
+def update_model(Model, data):
+    for column, value in data.dict().items():
+        setattr(Model, column, value)

@@ -21,6 +21,7 @@ class User(Base):
 
     rentals = relationship("Rental", back_populates="user")
     messages = relationship("Message", back_populates="user") 
+    warehouses = relationship("Warehouse", back_populates="owner")
     
     @classmethod
     async def check_user_exists(cls, db, email):
