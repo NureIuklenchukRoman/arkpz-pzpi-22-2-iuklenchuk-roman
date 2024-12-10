@@ -9,7 +9,7 @@ class Message(Base):
     __tablename__ = "messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", name="fk_message_user"), nullable=False)
     text = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
