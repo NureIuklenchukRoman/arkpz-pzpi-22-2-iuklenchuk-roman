@@ -13,12 +13,19 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
+    
     username = Column(Text)
+    last_name = Column(Text)
+    first_name = Column(Text)
+    
     email = Column(Text, unique=True)
-    phone_number = Column(Text)
+    phone = Column(Text)
+    
     password = Column(Text)
+    
     role = Column(Enum(UserRole), default=UserRole.CUSTOMER)
 
+    
     rentals = relationship("Rental", back_populates="user")
     messages = relationship("Message", back_populates="user") 
     warehouses = relationship("Warehouse", back_populates="owner")

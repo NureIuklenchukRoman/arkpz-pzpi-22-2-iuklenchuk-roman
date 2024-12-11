@@ -1,6 +1,9 @@
-from app.database import Base
+from ..base_model import Base
 from sqlalchemy import Column, Integer, Text, Float, ForeignKey
+from sqlalchemy.orm import relationship
 
+
+#On frontend available services for varahouse will be fetched by warehouse_id
 class PremiumService(Base):
     __tablename__ = "premium_services"
     
@@ -9,3 +12,5 @@ class PremiumService(Base):
     name = Column(Text, nullable=False)
     description = Column(Text, nullable=False)
     price = Column(Float, nullable=False)
+    
+    warehouse = relationship("Warehouse", back_populates="premium_services")

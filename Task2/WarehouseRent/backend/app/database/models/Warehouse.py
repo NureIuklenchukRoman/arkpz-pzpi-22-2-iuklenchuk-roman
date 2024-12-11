@@ -17,9 +17,9 @@ class Warehouse(Base):
     location = Column(String, nullable=False)
     size_sqm = Column(Float, nullable=False)
     price_per_day = Column(Float, nullable=False)
-    available_premium_services = Column(JSONB, nullable=True)  # JSON or comma-separated list
     owned_by = Column(Integer, ForeignKey("users.id", name="fk_warehouse_user"), nullable=False)
 
     rentals = relationship("Rental", back_populates="warehouse")
     lock = relationship("Lock", uselist=False, back_populates="warehouse")
     owner = relationship("User", back_populates="warehouses")
+    premium_services = relationship("PremiumService", back_populates="warehouse")

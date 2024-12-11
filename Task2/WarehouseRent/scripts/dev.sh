@@ -20,21 +20,20 @@ function build () {
 
 # Database command
 function db() {
-    cd ./backend || exit
     # Downgrade function
     function downgrade() {
-        alembic -x data=true downgrade -1
+        docker-compose exec backend alembic -x data=true downgrade -1
     }
 
     # Update head function
     function update_head() {
-        alembic upgrade head
+        docker-compose exec backend alembic upgrade head
     }
 
     # Commit function
     function commit() {
         comment=$(printf "%s_" "${@}")
-        alembic revision --autogenerate -m "$comment"
+        docker-compose exec backend alembic revision --autogenerate -m "$comment"
     }
 
     # Available commands for db
