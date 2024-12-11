@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, ForeignKey, Date, Float, Enum
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
 from ..base_model import Base
@@ -18,6 +19,7 @@ class Rental(Base):
     end_date = Column(Date, nullable=False)
     total_price = Column(Float, nullable=False)
     status = Column(Enum(RentalStatus), default=RentalStatus.RESERVED)
+    selected_services = Column(JSONB, nullable=True)
 
     user = relationship("User", back_populates="rentals")
     warehouse = relationship("Warehouse", back_populates="rentals")

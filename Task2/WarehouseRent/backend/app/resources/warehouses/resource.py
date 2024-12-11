@@ -44,7 +44,7 @@ async def create_warehouse(warehouse: WarehouseCreateSchema,
         size_sqm=warehouse.size_sqm,
         is_available=warehouse.is_available,
         price_per_day=warehouse.price_per_day,
-        premium_services=warehouse.premium_services,
+        available_premium_services=warehouse.available_premium_services,
         owned_by=user.id
     )
     db.add(new_warehouse)
