@@ -17,9 +17,8 @@ class ServiceUpdateSchema(ServiceSchema):
     name: Optional[str] = None
     location: Optional[str] = None
     size_sqm: Optional[float] = None
-    is_available: Optional[bool] = None
     price_per_day: Optional[float] = None
-    available_premium_services: Optional[list] = None
+    # available_premium_services: Optional[list] = None
 
 class ServiceDeleteSchema(BaseModel):
     id: int

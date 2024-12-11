@@ -34,5 +34,5 @@ def apply_filters_to_query(query, Model, filter: dict):
 
 
 def update_model(Model, data):
-    for column, value in data.dict().items():
+    for column, value in data.items():
         setattr(Model, column, value)

@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from datetime import date
+from typing import Optional
 class RentalResponseSchema(BaseModel):
     id: int
     warehouse_name: str
@@ -9,3 +10,19 @@ class RentalResponseSchema(BaseModel):
     total_price: float
     status: str
     
+
+class UserUpdateSchema(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    
+    
+class UserResponseSchema(BaseModel):
+    id: Optional[int]
+    username: Optional[str]
+    email: Optional[str]
+    phone: Optional[str]
+    first_name: Optional[str]
+    last_name: Optional[str]

@@ -21,7 +21,7 @@ from app.resources._shared.query import apply_filters_to_query, update_model
 services_router = APIRouter(prefix="/services", tags=["services"])
 
 
-@services_router.post("/create", response_model=ServiceResponseSchema)
+@services_router.post("/", response_model=ServiceResponseSchema)
 async def create_service(service: ServiceCreateSchema,
                            user=Depends(Authorization(
                                allowed_roles=[UserRole.CUSTOMER])),
@@ -36,5 +36,12 @@ async def create_service(service: ServiceCreateSchema,
     await db.commit()
     return new_service
 
+
+@services_router.get("/", response_model=list[ServiceResponseSchema])
+async def get_all_services(db=Depends(get_db), user=Depends(Authorization())):
+    query = select(PremiumService)
+    result = await db.execute(query)
+    services = result.scalars().all()
+    return services
 
 

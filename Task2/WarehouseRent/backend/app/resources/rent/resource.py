@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_db
 from app.utils.auth import Authorization
-from app.database.models import Warehouse, Rental, RentalStatus
+from app.database.models import Warehouse, Rental, RentalStatus, PremiumService
 
 from .schemas import RentWarehouseSchema, WarehouseDetails
 
@@ -13,49 +13,20 @@ from .schemas import RentWarehouseSchema, WarehouseDetails
 rent_router = APIRouter(prefix="/rent", tags=["rent"])
 
 
-def calculate_price(start_date, end_date, price):
+async def calculate_price(db, warehouse_data, price):
+    start_date = warehouse_data.start_date
+    end_date = warehouse_data.end_date
     days = (start_date - end_date).days
     price = days * price
+    
+    if warehouse_data.selected_services:
+        for service in warehouse_data.selected_services:
+            service_query = select(PremiumService).filter(PremiumService.id == service)
+            service_result = await db.execute(service_query)
+            service_ = service_result.scalar_one_or_none()
+            price += service_.price
+    
     return price
-
-
-@rent_router.get("/details/{warehouse_id}", response_model=WarehouseDetails)
-async def get_rent_details(warehouse_id: int, db=Depends(get_db)):
-
-    warehouse_query = select(Warehouse).filter(Warehouse.id == warehouse_id)
-    warehouse_result = await db.execute(warehouse_query)
-    warehouse = warehouse_result.scalar_one_or_none()
-
-    if not warehouse:
-        raise HTTPException(
-            status_code=404,
-            detail="Warehouse not found"
-        )
-
-    query = select(Rental).filter(Rental.warehouse_id == warehouse_id)
-    result = await db.execute(query)
-    rentals = result.scalars().all()
-
-    busy_dates = []
-    for rental in rentals:
-        dates = []
-        cur_date = rental.start_date
-
-        while cur_date <= rental.end_date:
-            dates.append(cur_date)
-            cur_date += timedelta(days=1)
-
-        busy_dates.extend(dates)
-
-    response = dict(
-        id=warehouse.id,
-        name=warehouse.name,
-        location=warehouse.location,
-        price_per_day=warehouse.price_per_day,
-        busy_dates=busy_dates
-    )
-
-    return response
 
 
 @rent_router.post("/{warehouse_id}")
@@ -88,13 +59,15 @@ async def rent_warehouse(warehouse_id: int,
                 detail="Warehouse is already reserved for this date"
             )
 
+
     rental = Rental(
         user_id=user.id,
         warehouse_id=warehouse_id,
         start_date=warehouse_data.start_date,
         end_date=warehouse_data.end_date,
-        total_price=calculate_price(
-            warehouse_data.start_date, warehouse_data.end_date, warehouse.price_per_day),
+        total_price= await calculate_price(db,
+            warehouse_data, warehouse.price_per_day),
+        selected_services=warehouse_data.selected_services,
         status=RentalStatus.RESERVED
     )
     db.add(rental)
