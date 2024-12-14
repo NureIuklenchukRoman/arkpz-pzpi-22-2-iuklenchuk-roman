@@ -1,11 +1,11 @@
-from datetime import datetime as duration
+from datetime import datetime as dt
 from datetime import timedelta
 from sqlalchemy import select, delete
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_db
 from app.utils.auth import Authorization
-from app.database.models import Warehouse, Rental, RentalStatus, PremiumService
+from app.database.models import Warehouse, Rental, RentalStatus, PremiumService, Message
 
 from .schemas import RentWarehouseSchema, WarehouseDetails
 
@@ -71,6 +71,50 @@ async def rent_warehouse(warehouse_id: int,
         status=RentalStatus.RESERVED
     )
     db.add(rental)
-    db.commit()
+    
+    message = Message(
+        user_id=user.id,
+        text=f"Your warehouse has been reserved successfully",
+    )
+    db.add(message)
+    await db.commit()
 
     return {"message": "Warehouse reserved successfully"}
+
+
+@rent_router.get("/{rent_id}", response_model=RentWarehouseSchema)
+async def get_rent_details(rent_id: int, user=Depends(Authorization()), db=Depends(get_db)):
+
+    query = select(Rental).filter(Rental.id == rent_id)
+    result = await db.execute(query)
+    rental = result.scalars().first()
+    if not rental:
+        raise HTTPException(
+            status_code=404,
+            detail="Rental not found"
+        )
+    return rental
+
+# @rent_router.get("/warehouse-rents/{warehouse_id}", response_model=list[RentWarehouseSchema])
+# async def get_warehouse_rents(warehouse_id: int, user=Depends(Authorization()), db=Depends(get_db)):
+#     warehouse = select(Warehouse).filter(Warehouse.id == warehouse_id)
+#     result = await db.execute(warehouse)
+#     warehouse = result.scalar_one_or_none()
+    
+#     if not warehouse:
+#         raise HTTPException(
+#             status_code=404,
+#             detail="Warehouse not found"
+#         )
+        
+#     if warehouse.owned_by != user.id:
+#         raise HTTPException(
+#             status_code=403,
+#             detail="You are not allowed to view this warehouse rents"
+#         )
+    
+#     query = select(Rental).filter(Rental.warehouse_id == warehouse_id)
+#     result = await db.execute(query)
+#     rentals = result.scalars().all()
+    
+#     return rentals

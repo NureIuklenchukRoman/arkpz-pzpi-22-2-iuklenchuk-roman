@@ -12,13 +12,12 @@ class ServiceSchema(BaseModel):
 class ServiceCreateSchema(ServiceSchema):
     pass
 
-class ServiceUpdateSchema(ServiceSchema):
-    id: int
-    name: Optional[str] = None
-    location: Optional[str] = None
-    size_sqm: Optional[float] = None
-    price_per_day: Optional[float] = None
+class ServiceUpdateSchema(BaseModel):
     # available_premium_services: Optional[list] = None
+    warehouse_id: int | None = None
+    name: str | None = None
+    description: str | None = None
+    price: float | None = None
 
 class ServiceDeleteSchema(BaseModel):
     id: int

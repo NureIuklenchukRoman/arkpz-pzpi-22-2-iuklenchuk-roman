@@ -1,8 +1,8 @@
 """initial commit_
 
-Revision ID: 3e0abc0f80df
+Revision ID: beaf6f0d9e52
 Revises: 
-Create Date: 2024-12-11 19:37:06.384706
+Create Date: 2024-12-14 12:58:19.331212
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '3e0abc0f80df'
+revision: str = 'beaf6f0d9e52'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -54,6 +54,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_warehouses_id'), 'warehouses', ['id'], unique=False)
     op.create_table('locks',
     sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('ip', sa.Text(), nullable=True),
     sa.Column('warehouse_id', sa.Integer(), nullable=False),
     sa.Column('access_key', sa.Text(), nullable=True),
     sa.ForeignKeyConstraint(['warehouse_id'], ['warehouses.id'], name='fk_lock_warehouse'),

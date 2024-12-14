@@ -27,7 +27,7 @@ warehouse_router = APIRouter(prefix="/warehouses", tags=["warehouses"])
 @warehouse_router.get("/", response_model=list[WarehouseResponseSchema])
 async def get_all_warehouses(db=Depends(get_db),
                              user=Depends(Authorization(
-                                allowed_roles=[UserRole.CUSTOMER])),
+                                allowed_roles=[])),
                              query_params: WarehouseQuerySchema = Depends()):
     query = select(Warehouse)
     query = apply_filters_to_query(query, Warehouse, query_params)
@@ -38,9 +38,9 @@ async def get_all_warehouses(db=Depends(get_db),
 
 
 @warehouse_router.get("/{warehouse_id}", response_model=WarehouseDetails)
-async def get_rent_details(warehouse_id: int, 
+async def get_warehouse_details(warehouse_id: int, 
                             user=Depends(Authorization(
-                                allowed_roles=[UserRole.CUSTOMER])),
+                                allowed_roles=[])),
                             db=Depends(get_db)):
 
     warehouse_query = select(Warehouse).filter(Warehouse.id == warehouse_id)
@@ -82,7 +82,7 @@ async def get_rent_details(warehouse_id: int,
 @warehouse_router.post("/", response_model=WarehouseResponseSchema)
 async def create_warehouse(warehouse: WarehouseCreateSchema,
                            user=Depends(Authorization(
-                               allowed_roles=[UserRole.CUSTOMER])),
+                               allowed_roles=[UserRole.ADMIN])),
                            db=Depends(get_db)):
     new_warehouse = Warehouse(
         name=warehouse.name,
@@ -99,7 +99,7 @@ async def create_warehouse(warehouse: WarehouseCreateSchema,
 @warehouse_router.put("/{warehouse_id}", response_model=WarehouseResponseSchema)
 async def update_warehouse(warehouse_id: int, warehouse_data: WarehouseUpdateSchema,
                            user=Depends(Authorization(
-                               allowed_roles=[UserRole.CUSTOMER])),
+                               allowed_roles=[UserRole.ADMIN])),
                            db=Depends(get_db)):
 
     query = select(Warehouse).filter(Warehouse.id == warehouse_id)
@@ -118,7 +118,7 @@ async def update_warehouse(warehouse_id: int, warehouse_data: WarehouseUpdateSch
             detail="You are not allowed to update this warehouse because you not own it"
         )
 
-    update_model(warehouse, warehouse_data.dict())
+    update_model(warehouse, warehouse_data.dict(exclude_unset=True))
 
     await db.commit()
     return warehouse

@@ -78,3 +78,11 @@ async def update_user_info(user_data: UserUpdateSchema, user=Depends(Authorizati
 @user_router.get("/me", response_model=UserResponseSchema)
 async def get_user_info(user=Depends(Authorization()), db=Depends(get_db)):
     return user
+
+
+@user_router.get("/", response_model=list[UserResponseSchema])
+async def get_all_users(db=Depends(get_db), user=Depends(Authorization())):
+    query = select(User)
+    result = await db.execute(query)
+    users = result.scalars().all()
+    return users
