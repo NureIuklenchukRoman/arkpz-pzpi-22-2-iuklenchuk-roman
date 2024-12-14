@@ -2,18 +2,39 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 
 from app.database import get_db
-from app.database.models import Warehouse, Rental, User, Lock
+from app.database.models import Warehouse, Rental, User, Lock, UserRole
 from app.utils.auth import Authorization
 from app.resources._shared.query import update_model
 
 from .schemas import LockResponseSchema, LockCreateSchema
 
 
+async def check_lock_owner(db, lock, user):
+    warehouse_query = select(Warehouse).filter(Warehouse.id == lock.warehouse_id)
+    result = await db.execute(warehouse_query)
+    warehouse = result.scalars().first()
+    
+    if warehouse.owned_by != user.id:
+        raise HTTPException(status_code=403, detail="You are not allowed to delete this lock")
+    
+
 locks_router = APIRouter(prefix="/locks", tags=["locks"])
 
 
+@locks_router.get("/{lock_id}", response_model=LockResponseSchema)
+async def get_lock(lock_id: int, user=Depends(Authorization()), db=Depends(get_db)):
+    query = select(Lock).filter(Lock.id == lock_id)
+    result = await db.execute(query)
+    lock = result.scalars().first()
+    
+    if lock is None:
+        raise HTTPException(status_code=404, detail="Lock not found")
+    
+    return lock
+
+
 @locks_router.get("/", response_model=list[LockResponseSchema])
-async def get_locks(user=Depends(Authorization()), db=Depends(get_db)):
+async def get_locks(user=Depends(Authorization(allowed_roles=[UserRole.ADMIN])), db=Depends(get_db)):
     warehouses_query = select(Warehouse).filter(Warehouse.owned_by == user.id)
     warehouses_result = await db.execute(warehouses_query)
     warehouses = warehouses_result.scalars().all()
@@ -30,6 +51,7 @@ async def get_locks(user=Depends(Authorization()), db=Depends(get_db)):
                     id=lock.id,
                     warehouse_id=lock.warehouse_id,
                     access_key=lock.access_key,
+                    ip=lock.ip
                 )
             )
             
@@ -37,21 +59,27 @@ async def get_locks(user=Depends(Authorization()), db=Depends(get_db)):
 
 
 @locks_router.post("/", response_model=LockResponseSchema)
-async def create_lock(lock: LockCreateSchema, user=Depends(Authorization()), db=Depends(get_db)):
+async def create_lock(lock: LockCreateSchema, user=Depends(Authorization(allowed_roles=[UserRole.ADMIN])), db=Depends(get_db)):
+
     new_lock = Lock(
         warehouse_id=lock.warehouse_id,
+        ip=lock.ip,
     )
+    await check_lock_owner(db, lock, user)
+
     db.add(new_lock)
     await db.commit()
     return new_lock
 
 
 @locks_router.delete("/{lock_id}", response_model=LockResponseSchema)
-async def delete_lock(lock_id: int, user=Depends(Authorization()), db=Depends(get_db)):
+async def delete_lock(lock_id: int, user=Depends(Authorization(allowed_roles=[UserRole.ADMIN])), db=Depends(get_db)):
     query = select(Lock).filter(Lock.id == lock_id)
     result = await db.execute(query)
     lock = result.scalars().first()
     
+    await check_lock_owner(db, lock, user)
+
     if lock is None:
         raise HTTPException(status_code=404, detail="Lock not found")
     

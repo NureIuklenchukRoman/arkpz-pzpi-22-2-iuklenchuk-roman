@@ -1,5 +1,4 @@
 import os
-import jwt
 from datetime import timedelta
 
 from fastapi import Depends, HTTPException, status, APIRouter
@@ -11,7 +10,7 @@ from app.database import User, get_db
 
 
 from app.utils.verification import verify_password, hash_password
-from app.utils.auth import create_access_token, create_refresh_token
+from app.utils.auth import create_access_token, create_refresh_token, get_current_user
 
 from .schema import *
 
@@ -22,7 +21,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 REFRESH_TOKEN_EXPIRE_MINUTES = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES"))
 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/token")
 
 auth_router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -55,6 +54,9 @@ async def register_user(user_create: UserCreate, db: Session = Depends(get_db)):
         username=user_create.username,
         email=user_create.email,
         password=hashed_password,
+        role=user_create.role,
+        first_name=user_create.first_name,
+        last_name=user_create.last_name
     )
     db.add(new_user)
     db.commit()
@@ -85,31 +87,7 @@ async def login(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestF
 
 @auth_router.post("/refresh-token", response_model=TokenWithRefreshToken)
 async def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-
-    try:
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token expired",
-        )
-    except jwt.JWTError:
-        raise credentials_exception
-
-    query = select(User).filter(User.username == token_data.username)
-    existing_user_ = await db.execute(query)
-    user = existing_user_.first()
-    if user is None:
-        raise credentials_exception
+    user = await get_current_user(refresh_token, db)
 
     new_access_token = create_access_token(data={"sub": user.username})
     new_refresh_token = create_refresh_token(data={"sub": user.username})

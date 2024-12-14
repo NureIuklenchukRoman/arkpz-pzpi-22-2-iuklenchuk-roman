@@ -4,12 +4,14 @@ from typing import Optional
 
 class LockResponseSchema(BaseModel):
     id: int
+    ip: str | None
     warehouse_id: int
     access_key: Optional[str]
     
 class LockCreateSchema(BaseModel):
     warehouse_id: int
-    
+    ip: str
+
 # class LockGetSchema(BaseModel):
 #     username: Optional[str] = None
 #     email: Optional[str] = None
