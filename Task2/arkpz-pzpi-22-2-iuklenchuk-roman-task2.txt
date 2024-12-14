@@ -1,0 +1,162 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+
+Кафедра програмної інженерії
+
+Звіт
+З лабораторної роботи №2
+З дисципліни «Аналіз та рефакторинг коду»
+на тему: «РОЗРОБКА БАЗИ ДАНИХ ДЛЯ СЕРВЕРНОЇ ЧАСТИНИ ПРОГРАМНОЇ СИСТЕМИ ТА ПРИКЛАДНОГО ПРОГРАМНОГО ІНТЕРФЕЙСУ (API)»
+
+Виконавець:		
+ст. гр. ПЗПІ-22-2						                    Юкленчук Р. О. 
+
+Перевірив:		
+доц. каф. ПІ						                    Сокорчук І. П. 
+	
+
+
+                                                                                                       
+
+
+
+
+
+
+
+
+Харків 2024
+1 МЕТА РОБОТИ
+
+     Метою роботи є розробити базу даних для серверної частини та прикладного програмного інтерфейсу для програмної системи оренди малих складів.
+
+2 ХІД РОБОТИ
+
+     Процес виконання лабораторної роботи розпочався з детального проектування системи. Основою цього етапу стало створення UML-діаграми прецедентів для програмної системи оренди складів. Ця система пропонує широкий спектр функцій, що охоплюють як основні, так і спеціалізовані задачі. Для забезпечення структури та деталізації, діаграма прецедентів була розбита на декілька частин, які представлені в Додатку А.
+     На другому етапі була створена ER-діаграма, яка наочно показує зв'язки між сутностями системи і є фундаментом для подальшого моделювання даних. Побудована ER-діаграма представлена в Додатку Б. На основі цієї діаграми була розроблена база даних, структура якої відображена у вигляді діаграми в Додатку В.
+     Наступним кроком було створення API для забезпечення взаємодії між серверною частиною системи та клієнтами. Для документування і стандартизації API була підготовлена Swagger-специфікація, наведена в Додатку Г. Ця специфікація забезпечує детальний опис усіх ендпоінтів, їх вхідних параметрів, типів даних і очікуваних відповідей, сприяючи прозорості та зручності інтеграції з клієнтськими додатками.
+     Приклади коду серверної частини, які демонструють ключові аспекти реалізації системи, наведені в Додатку Д. Для забезпечення доступності та зручності перегляду, повний вихідний код проекту був завантажений на платформу GitHub. Під час розробки API було прийнято кілька важливих інженерних рішень, які забезпечують стабільність і гнучкість системи:
+     1. Серверна частина побудована на основі фреймворку FastAPI з використанням модульної архітектури. Кожен модуль є незалежним компонентом додатка, що включає контролер та сервіс для реалізації конкретної функціональності. Такий підхід дозволяє легко масштабувати систему, імпортувати необхідні моделі для роботи з базою даних і експортувати сервіси для використання в інших модулях.
+     2. Для роботи з базою даних була обрана ORM (Object Relational Mapping) SQLAlchemy, яка забезпечує гнучке управління даними та спрощує процеси внесення змін.
+     3. У якості системи управління базами даних використовується PostgreSQL, яка розміщена в хмарному середовищі. Це дозволяє зберігати дані віддалено, забезпечуючи зручність та підвищуючи загальну продуктивність проекту.
+
+3 ВИСНОВКИ
+
+     Під час виконання лабораторної роботи вдалося успішно досягти основної мети — розробити серверну частину та прикладний програмний інтерфейс (API) для системи оренди складів, яка відповідає сучасним стандартам якості та функціональності. Виконання послідовних етапів, від створення UML-діаграми прецедентів до розробки та документування API, забезпечило структурованість і ефективність процесу розробки.
+     Використання фреймворку FastAPI з модульною архітектурою надало системі високу гнучкість і легкість масштабування. Впровадження ORM SQLAlchemy сприяло ефективному управлінню даними в PostgreSQL, обраній як основна система управління базами даних. Розміщення бази даних у хмарі забезпечило зручний віддалений доступ і підвищило продуктивність, що є критично важливим для сучасних програмних рішень.
+     Документування API за допомогою Swagger забезпечило прозорість розробленої системи та полегшило її інтеграцію з клієнтськими додатками. Публікація коду на платформі GitHub підвищила доступність проєкту та його готовність до подальшого розвитку.
+     Загалом, лабораторна робота продемонструвала використання сучасних підходів до проєктування програмних систем, що сприяють створенню масштабованих, надійних і ефективних рішень. Використані технології та інструменти, такі як FastAPI, SQLAlchemy, PostgreSQL та Swagger, дозволили створити високоякісну систему, готову до реального використання та подальшого розширення.
+ДОДАТОК А
+UML діаграма прецендентів
+
+
+Рисунок А – UML Діаграма прецедентів
+
+ДОДАТОК Б
+ER Діаграма бази даних
+
+
+Рисунок Б – ER діаграма бази даних
+ДОДАТОК В
+Діаграма структури бази даних
+
+
+Рисунок В – Діаграма структури бази даних
+ДОДАТОК Г
+Специфікація API
+
+
+Рисунок Г – Специфікація API
+ДОДАТОК Д
+Приклад програмного коду user_resource.py
+
+  1 from fastapi import APIRouter, Depends, HTTPException
+  2 from sqlalchemy import select
+  3 
+  4 from app.database import get_db
+  5 from app.database.models import Warehouse, Rental, User
+  6 from app.utils.auth import Authorization
+  7 from app.resources._shared.query import update_model
+  8 
+  9 from .schemas import RentalResponseSchema, UserResponseSchema, UserUpdateSchema
+ 10 
+ 11 
+ 12 user_router = APIRouter(prefix="/user", tags=["user"])
+ 13 
+ 14 
+ 15 @user_router.get("/my_rents", response_model=list[RentalResponseSchema])
+ 16 async def get_my_rent(user=Depends(Authorization()), db=Depends(get_db)):
+ 17     query = select(Rental).filter(Rental.user_id == user.id)
+ 18     rental_result = await db.execute(query)
+ 19     rentals = rental_result.scalars().all()
+ 20 
+ 21     results = []
+ 22     for rental in rentals:
+ 23         warehouse_query = select(Warehouse).filter(
+ 24             Warehouse.id == rental.warehouse_id)
+ 25         warehouse_result = await db.execute(warehouse_query)
+ 26         warehouse = warehouse_result.scalar_one_or_none()
+ 27 
+ 28         results.append(
+ 29             dict(
+ 30                 id=rental.id,
+ 31                 warehouse_name=warehouse.name,
+ 32                 warehouse_location=warehouse.location,
+ 33                 start_date=rental.start_date,
+ 34                 end_date=rental.end_date,
+ 35                 status=rental.status,
+ 36                 total_price=rental.total_price
+ 37             )
+ 38         )
+ 39 
+ 40     return results
+ 41 
+ 42 
+ 43 @user_router.get("/my_rents/{rent_id}", response_model=RentalResponseSchema)
+ 44 async def get_my_rent(rent_id: int, user=Depends(Authorization()), db=Depends(get_db)):
+ 45     query = select(Rental).filter(Rental.id == rent_id)
+ 46     rental_result = await db.execute(query)
+ 47     rental = rental_result.scalar_one_or_none()
+ 48 
+ 49     if not rental:
+ 50         raise HTTPException(
+ 51             status_code=404,
+ 52             detail="Rental not found"
+ 53         )
+ 54 
+ 55     warehouse_query = select(Warehouse).filter(
+ 56         Warehouse.id == rental.warehouse_id)
+ 57     warehouse_result = await db.execute(warehouse_query)
+ 58     warehouse = warehouse_result.scalar_one_or_none()
+ 59 
+ 60     return dict(
+ 61         id=rental.id,
+ 62         warehouse_name=warehouse.name,
+ 63         warehouse_location=warehouse.location,
+ 64         start_date=rental.start_date,
+ 65         end_date=rental.end_date,
+ 66         status=rental.status,
+ 67         total_price=rental.total_price
+ 68     )
+ 69 
+ 70 
+ 71 @user_router.put("/me", response_model=UserResponseSchema)
+ 72 async def update_user_info(user_data: UserUpdateSchema, user=Depends(Authorization()), db=Depends(get_db)):
+ 73     update_model(user, user_data.dict(exclude_unset=True))
+ 74     await db.commit()
+ 75     return user
+ 76 
+ 77 
+ 78 @user_router.get("/me", response_model=UserResponseSchema)
+ 79 async def get_user_info(user=Depends(Authorization()), db=Depends(get_db)):
+ 80     return user
+ 81 
+ 82 @user_router.get("/", response_model=list[UserResponseSchema])
+ 83 async def get_all_users(db=Depends(get_db), user=Depends(Authorization())):
+ 84     query = select(User)
+ 85     result = await db.execute(query)
+ 86     users = result.scalars().all()
+ 87     return users
+ДОДАТОК Е
+Відео-посилання на Youtube 
+Посилання: https://www.youtube.com/watch?v=CecqckxZpjs
