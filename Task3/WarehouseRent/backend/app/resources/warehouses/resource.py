@@ -20,6 +20,7 @@ from app.utils.auth import get_current_user, Authorization
 from app.database.models import Warehouse, UserRole, Rental
 from app.resources._shared.query import apply_filters_to_query, update_model
 
+from .report_service import generate_report
 
 warehouse_router = APIRouter(prefix="/warehouses", tags=["warehouses"])
 
@@ -122,3 +123,9 @@ async def update_warehouse(warehouse_id: int, warehouse_data: WarehouseUpdateSch
 
     await db.commit()
     return warehouse
+
+
+@warehouse_router.get("/revenue/")
+async def get_total_revenue(db=Depends(get_db)):
+    res = await generate_report(db)
+    return JSONResponse(content={"total_revenue": res})

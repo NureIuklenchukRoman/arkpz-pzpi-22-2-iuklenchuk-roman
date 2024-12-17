@@ -1,10 +1,11 @@
 from celery import Task
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
-
+from app.database.conn import url
 # TODO: remove and use from config
-sqlalchemy_url = "postgresql://database:database@pgbouncer:6432/database"
-engine = create_engine(sqlalchemy_url, pool_recycle=3600, pool_size=10, connect_args={'connect_timeout': 10})
+sqlalchemy_url = url
+sqlalchemy_url = url.replace("asyncpg", "psycopg2")
+engine = create_engine(sqlalchemy_url, pool_recycle=3600, pool_size=10)
 
 class DatabaseTask(Task):
     """An abstract Celery Task that ensures that the connection to the

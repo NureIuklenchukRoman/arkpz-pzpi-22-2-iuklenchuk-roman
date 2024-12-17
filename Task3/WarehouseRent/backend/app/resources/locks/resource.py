@@ -60,7 +60,6 @@ async def get_locks(user=Depends(Authorization(allowed_roles=[UserRole.ADMIN])),
 
 @locks_router.post("/", response_model=LockResponseSchema)
 async def create_lock(lock: LockCreateSchema, user=Depends(Authorization(allowed_roles=[UserRole.ADMIN])), db=Depends(get_db)):
-
     new_lock = Lock(
         warehouse_id=lock.warehouse_id,
         ip=lock.ip,
