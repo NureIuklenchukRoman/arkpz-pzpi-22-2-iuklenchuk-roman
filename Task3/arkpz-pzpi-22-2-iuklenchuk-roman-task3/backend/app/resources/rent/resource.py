@@ -1,12 +1,12 @@
 import uuid
-from datetime import timedelta
 from datetime import datetime as dt
+
 from sqlalchemy import select, delete
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_db
 from app.utils.auth import Authorization
-from app.database.models import Warehouse, Rental, RentalStatus, PremiumService, Message, Lock
+from app.database.models import Warehouse, Rental, RentalStatus, PremiumService, Message, Lock, UserRole
 
 from .tasks import send_email
 from .schemas import RentWarehouseSchema, WarehouseDetails
@@ -41,10 +41,10 @@ async def rent_warehouse(warehouse_id: int,
     result = await db.execute(query)
     warehouse = result.scalar_one_or_none()
 
-    if not warehouse:
+    if not warehouse or warehouse.is_blocked or warehouse.is_deleted:
         raise HTTPException(
             status_code=404,
-            detail="Warehouse not found"
+            detail="Warehouse not found, deleted, or blocked by admins"
         )
 
     existing_rentals_query = select(Rental).filter(
@@ -84,29 +84,35 @@ async def rent_warehouse(warehouse_id: int,
             detail="Lock warehouse not found"
         )
 
-    lock.access_key = uuid.uuid4()
+    lock.access_key = str(uuid.uuid4())
     
-    message_text = f"Warehouse {warehouse.name} has been reserved successfully, wait for the owner to connect with you"
-    send_email.delay(user.id, message_text, "Warehouse reservation")
-    send_email.delay(warehouse.owned_by,
-                     f"Warehouse {warehouse.name} has been reserved by {user.email} from {warehouse_data.start_date} to {warehouse_data.end_date} for {rental.total_price} phone number: {user.phone}", "Warehouse reservation")
-
+    message_text = f"""Warehouse {warehouse.name} has been reserved successfully, 
+                    from {warehouse_data.start_date} to {warehouse_data.end_date},
+                    cost will be {rental.total_price},
+                    wait for the owner to connect with you"""
+                    
     message = Message(
         user_id=user.id,
         text=message_text,
     )
     db.add(message)
     await db.commit()
+    
+    send_email.delay(user.id, message_text, "Warehouse reservation")
+    send_email.delay(warehouse.owned_by,
+                     f"""Warehouse {warehouse.name} has been reserved by {user.email} from 
+                     {warehouse_data.start_date} to {warehouse_data.end_date} for {rental.total_price} 
+                     phone number: {user.phone}""", "Warehouse reservation")
 
     return {"message": "Warehouse reserved successfully"}
 
 
 @rent_router.get("/{rent_id}", response_model=RentWarehouseSchema)
 async def get_rent_details(rent_id: int, user=Depends(Authorization()), db=Depends(get_db)):
-
     query = select(Rental).filter(Rental.id == rent_id)
     result = await db.execute(query)
     rental = result.scalars().first()
+    
     if not rental:
         raise HTTPException(
             status_code=404,
@@ -114,26 +120,27 @@ async def get_rent_details(rent_id: int, user=Depends(Authorization()), db=Depen
         )
     return rental
 
-# @rent_router.get("/warehouse-rents/{warehouse_id}", response_model=list[RentWarehouseSchema])
-# async def get_warehouse_rents(warehouse_id: int, user=Depends(Authorization()), db=Depends(get_db)):
-#     warehouse = select(Warehouse).filter(Warehouse.id == warehouse_id)
-#     result = await db.execute(warehouse)
-#     warehouse = result.scalar_one_or_none()
 
-#     if not warehouse:
-#         raise HTTPException(
-#             status_code=404,
-#             detail="Warehouse not found"
-#         )
+@rent_router.get("/warehouse-rents/{warehouse_id}", response_model=list[RentWarehouseSchema])
+async def get_warehouse_rents(warehouse_id: int, user=Depends(Authorization(allowed_roles=[UserRole.SELLER])), db=Depends(get_db)):
+    warehouse = select(Warehouse).filter(Warehouse.id == warehouse_id)
+    result = await db.execute(warehouse)
+    warehouse = result.scalar_one_or_none()
 
-#     if warehouse.owned_by != user.id:
-#         raise HTTPException(
-#             status_code=403,
-#             detail="You are not allowed to view this warehouse rents"
-#         )
+    if not warehouse:
+        raise HTTPException(
+            status_code=404,
+            detail="Warehouse not found"
+        )
 
-#     query = select(Rental).filter(Rental.warehouse_id == warehouse_id)
-#     result = await db.execute(query)
-#     rentals = result.scalars().all()
+    if warehouse.owned_by != user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not allowed to view this warehouse rents"
+        )
 
-#     return rentals
+    query = select(Rental).filter(Rental.warehouse_id == warehouse_id)
+    result = await db.execute(query)
+    rentals = result.scalars().all()
+
+    return rentals

@@ -1,9 +1,8 @@
-from sqlalchemy import Column, Integer, Float, ForeignKey, String, Enum, DateTime, Text
-from sqlalchemy.orm import relationship
-from enum import Enum as PyEnum
 from datetime import datetime
-from ..base_model import Base
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, ForeignKey, DateTime, Text
 
+from ..base_model import Base
 
 class Message(Base):
     __tablename__ = "messages"

@@ -1,7 +1,8 @@
+import re
+from .schema import *
 from fastapi import Form
 from pydantic import BaseModel, validator, EmailStr
-from .schema import *
-import re
+
 
 class UserSchema(BaseModel):
     username: str
@@ -24,6 +25,11 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str | None = None
+
+
+class ChangePassword(BaseModel):
+    old_password: str
+    new_password: str
 
 
 class UserCreate(BaseModel):

@@ -1,16 +1,11 @@
+from sqlalchemy import select
 from fastapi import APIRouter, Depends
-
-from sqlalchemy.orm import Session
-from sqlalchemy import select, delete
-
-from .schema import (
-    PaymentResponseSchema,
-    PaymentSchema,
-)
 
 from app.database import get_db
 from app.utils.auth import Authorization
-from app.database.models import PremiumService, Rental, Payment
+from app.database.models import Rental, Payment
+
+from .schema import PaymentResponseSchema
 
 
 payment_router = APIRouter(prefix="/payments", tags=["payments"])

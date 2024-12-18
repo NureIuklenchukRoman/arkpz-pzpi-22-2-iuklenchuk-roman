@@ -1,7 +1,6 @@
-from fastapi import Form
-from pydantic import BaseModel
 from .schema import *
 from typing import Optional
+from pydantic import BaseModel
 
 class ServiceSchema(BaseModel):
     warehouse_id: int

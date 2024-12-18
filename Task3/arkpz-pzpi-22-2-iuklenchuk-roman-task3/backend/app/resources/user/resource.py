@@ -1,15 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_db
-from app.database.models import Warehouse, Rental, User
 from app.utils.auth import Authorization
 from app.resources._shared.query import update_model
+from app.database.models import Warehouse, Rental, User, UserRole
 
 from .schemas import RentalResponseSchema, UserResponseSchema, UserUpdateSchema
 
 
-user_router = APIRouter(prefix="/user", tags=["user"])
+user_router = APIRouter(prefix="/users", tags=["users"])
 
 
 @user_router.get("/my_rents", response_model=list[RentalResponseSchema])
@@ -81,8 +81,57 @@ async def get_user_info(user=Depends(Authorization()), db=Depends(get_db)):
 
 
 @user_router.get("/", response_model=list[UserResponseSchema])
-async def get_all_users(db=Depends(get_db), user=Depends(Authorization())):
+async def get_all_users(db=Depends(get_db), user=Depends(Authorization(allowed_roles=[UserRole.ADMIN]))):
     query = select(User)
     result = await db.execute(query)
     users = result.scalars().all()
     return users
+
+
+async def get_user_warehouses(db, user):
+    user_warehouses_query = select(Warehouse).filter(Warehouse.owned_by == user.id)
+    user_warehouses_result = await db.execute(user_warehouses_query)
+    user_warehouses = user_warehouses_result.scalars().all()
+    return user_warehouses
+
+
+@user_router.get("/block_user", response_model=UserResponseSchema)
+async def block_user(user_id: int, db=Depends(get_db), user=Depends(Authorization(allowed_roles=[UserRole.ADMIN]))):
+    query = select(User).filter(User.id == user_id)
+    result = await db.execute(query)
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+        
+    user.is_blocked = True
+    
+    user_warehouses = get_user_warehouses(db, user)
+    for warehouse in user_warehouses:
+        warehouse.is_blocked = True
+    await db.commit()
+    return user
+
+
+@user_router.get("/unblock_user", response_model=UserResponseSchema)
+async def unblock_user(user_id: int, db=Depends(get_db), user=Depends(Authorization(allowed_roles=[UserRole.ADMIN]))):
+    query = select(User).filter(User.id == user_id)
+    result = await db.execute(query)
+    user = result.scalars().first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+        
+    user.is_blocked = False
+    
+    user_warehouses = get_user_warehouses(db, user)
+    for warehouse in user_warehouses:
+        warehouse.is_blocked = False
+    await db.commit()
+    return user

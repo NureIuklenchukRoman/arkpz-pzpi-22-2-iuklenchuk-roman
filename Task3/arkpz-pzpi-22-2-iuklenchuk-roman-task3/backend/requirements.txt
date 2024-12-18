@@ -17,3 +17,4 @@ redis==5.2.1
 flower==2.0.1
 pydantic[email]
 pandas==2.2.3
+Faker==33.1.0

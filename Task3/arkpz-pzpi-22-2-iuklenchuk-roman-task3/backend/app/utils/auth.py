@@ -8,13 +8,12 @@ from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-from sqlalchemy.orm import Session
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import User, get_db, UserRole
 from app.resources.auth.schema import TokenData
-import loguru
+
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
@@ -43,6 +42,14 @@ class Authorization:
             )
 
         return user_data
+
+
+def check_if_user_blocked(user: User):
+    if user.is_blocked:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You were blocked by the admin to perform this operation',
+        )
 
 
 async def get_current_user(token: str, db: AsyncSession):

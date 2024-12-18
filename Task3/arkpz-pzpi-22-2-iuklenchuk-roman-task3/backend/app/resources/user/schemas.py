@@ -27,3 +27,4 @@ class UserResponseSchema(BaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
     role: Optional[str]
+    is_blocked: Optional[bool]

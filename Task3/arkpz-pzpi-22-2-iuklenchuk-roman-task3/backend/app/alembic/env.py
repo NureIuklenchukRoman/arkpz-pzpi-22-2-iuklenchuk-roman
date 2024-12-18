@@ -1,10 +1,10 @@
 import sys
 import asyncio
 import pathlib
-from alembic import context
-from sqlalchemy.ext.asyncio import create_async_engine
 from loguru import logger
+from alembic import context
 from logging.config import fileConfig
+from sqlalchemy.ext.asyncio import create_async_engine
 
 sys.path.append(str(pathlib.Path(__file__).resolve(strict=True).parent.parent))
 

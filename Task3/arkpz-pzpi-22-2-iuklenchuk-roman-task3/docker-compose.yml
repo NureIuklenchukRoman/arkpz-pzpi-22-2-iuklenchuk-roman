@@ -43,7 +43,7 @@ services:
       - app-network
   
   celery_worker:
-    image: warehouserent-backend
+    image: arkpz-pzpi-22-2-iuklenchuk-roman-task3-backend
     container_name: "celery-worker"
     command: ["celery", "-A", "app.celery", "worker", "--loglevel=info"]
     environment:
@@ -58,7 +58,7 @@ services:
       - redis
 
   celery_beat:
-    image: warehouserent-backend
+    image: arkpz-pzpi-22-2-iuklenchuk-roman-task3-backend
     container_name: "celery-beat"
     command: ["celery", "-A", "app.celery", "beat", "--loglevel=info"]
     environment:
@@ -73,7 +73,7 @@ services:
       - backend
 
   flower:
-    image: warehouserent-backend
+    image: arkpz-pzpi-22-2-iuklenchuk-roman-task3-backend
     container_name: "flower"
     command: ["celery", "-A", "app.celery", "flower", "--loglevel=info", "--port=5555"]
     environment:

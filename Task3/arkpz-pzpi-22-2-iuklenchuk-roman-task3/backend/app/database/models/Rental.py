@@ -1,8 +1,10 @@
-from sqlalchemy import Column, Integer, ForeignKey, Date, Float, Enum
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import relationship
 from enum import Enum as PyEnum
+from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Column, Integer, ForeignKey, Date, Float, Enum
+
 from ..base_model import Base
+
 
 class RentalStatus(PyEnum):
     RESERVED = "reserved"

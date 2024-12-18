@@ -7,6 +7,7 @@ from enum import Enum as PyEnum
 
 class UserRole(PyEnum):
     ADMIN = "admin"
+    SELLER = "seller"
     CUSTOMER = "customer"
 
 class User(Base):
@@ -25,6 +26,7 @@ class User(Base):
     
     role = Column(Enum(UserRole), default=UserRole.CUSTOMER)
 
+    is_blocked = Column(Boolean, default=False)
     
     rentals = relationship("Rental", back_populates="user")
     messages = relationship("Message", back_populates="user") 

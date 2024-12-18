@@ -36,8 +36,12 @@ function db() {
         docker-compose exec backend alembic revision --autogenerate -m "$comment"
     }
 
+    function fill(){
+        docker-compose exec backend python -m app.database.fill_db
+    }
+
     # Available commands for db
-    COMMANDS=("downgrade" "update_head" "commit")
+    COMMANDS=("downgrade" "update_head" "commit" "fill")
 
     if [[ $# -gt 0 ]]; then
         if [[ " ${COMMANDS[@]} " =~ " $1 " ]]; then

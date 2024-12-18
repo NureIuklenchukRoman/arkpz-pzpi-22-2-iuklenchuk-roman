@@ -1,6 +1,6 @@
 from ..base_model import Base
-from sqlalchemy import Column, Integer, Text, Float, ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, Text, Float, ForeignKey
 
 
 #On frontend available services for varahouse will be fetched by warehouse_id

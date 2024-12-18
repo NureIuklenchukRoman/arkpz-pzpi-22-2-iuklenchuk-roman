@@ -1,9 +1,7 @@
-from sqlalchemy import Column, Integer, Float, ForeignKey, String, Enum, DateTime, Text
 from sqlalchemy.orm import relationship
-from enum import Enum as PyEnum
-from datetime import datetime
-from ..base_model import Base
+from sqlalchemy import Column, Integer, ForeignKey, Text
 
+from ..base_model import Base
 
 class Lock(Base):
     __tablename__ = "locks"

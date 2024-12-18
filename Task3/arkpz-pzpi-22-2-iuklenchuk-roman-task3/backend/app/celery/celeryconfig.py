@@ -14,7 +14,8 @@ task_default_exchange = 'low'
 task_default_routing_key = 'low'
 
 imports = {
-    "app.resources.rent.tasks"
+    "app.resources.rent.tasks",
+    "app.utils.email",
 }
 
 broker_url = "redis://redis:6379/0"

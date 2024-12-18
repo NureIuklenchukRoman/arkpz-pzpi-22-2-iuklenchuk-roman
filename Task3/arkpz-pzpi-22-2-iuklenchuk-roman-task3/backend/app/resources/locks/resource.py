@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.database import get_db
-from app.database.models import Warehouse, Rental, User, Lock, UserRole
-from app.utils.auth import Authorization
-from app.resources._shared.query import update_model
+from app.database.models import Warehouse, Lock, UserRole
+from app.utils.auth import Authorization, check_if_user_blocked
 
 from .schemas import LockResponseSchema, LockCreateSchema
 
@@ -34,7 +33,8 @@ async def get_lock(lock_id: int, user=Depends(Authorization()), db=Depends(get_d
 
 
 @locks_router.get("/", response_model=list[LockResponseSchema])
-async def get_locks(user=Depends(Authorization(allowed_roles=[UserRole.ADMIN])), db=Depends(get_db)):
+async def get_locks(user=Depends(Authorization(allowed_roles=[UserRole.SELLER])), db=Depends(get_db)):
+    check_if_user_blocked(user)
     warehouses_query = select(Warehouse).filter(Warehouse.owned_by == user.id)
     warehouses_result = await db.execute(warehouses_query)
     warehouses = warehouses_result.scalars().all()
@@ -59,7 +59,8 @@ async def get_locks(user=Depends(Authorization(allowed_roles=[UserRole.ADMIN])),
 
 
 @locks_router.post("/", response_model=LockResponseSchema)
-async def create_lock(lock: LockCreateSchema, user=Depends(Authorization(allowed_roles=[UserRole.ADMIN])), db=Depends(get_db)):
+async def create_lock(lock: LockCreateSchema, user=Depends(Authorization(allowed_roles=[UserRole.SELLER])), db=Depends(get_db)):
+    check_if_user_blocked(user)
     new_lock = Lock(
         warehouse_id=lock.warehouse_id,
         ip=lock.ip,
@@ -72,7 +73,8 @@ async def create_lock(lock: LockCreateSchema, user=Depends(Authorization(allowed
 
 
 @locks_router.delete("/{lock_id}", response_model=LockResponseSchema)
-async def delete_lock(lock_id: int, user=Depends(Authorization(allowed_roles=[UserRole.ADMIN])), db=Depends(get_db)):
+async def delete_lock(lock_id: int, user=Depends(Authorization(allowed_roles=[UserRole.SELLER])), db=Depends(get_db)):
+    check_if_user_blocked(user)
     query = select(Lock).filter(Lock.id == lock_id)
     result = await db.execute(query)
     lock = result.scalars().first()
