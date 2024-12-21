@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: database
+    env_file:
+      - .env
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend  # Points to the backend directory
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload  # Correct path to main.py
+    volumes:
+      - ./backend:/app  # Mount the backend folder to /code in the container
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - database
+    networks:
+      - app-network
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    ports:
+      - 333:80
+    depends_on:
+      - database
+    volumes:
+      - ./pgadmin-servers.json:/pgadmin4/servers.json:ro
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    networks:
+      - app-network
+  
+  celery_worker:
+    image: arkpz-pzpi-22-2-iuklenchuk-roman-task3-backend
+    container_name: "celery-worker"
+    command: ["celery", "-A", "app.celery", "worker", "--loglevel=info"]
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - .env
+    networks:
+      - app-network
+    depends_on:
+      - backend
+      - redis
+
+  celery_beat:
+    image: arkpz-pzpi-22-2-iuklenchuk-roman-task3-backend
+    container_name: "celery-beat"
+    command: ["celery", "-A", "app.celery", "beat", "--loglevel=info"]
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    env_file:
+      - .env
+    networks:
+      - app-network
+    depends_on:
+      - redis
+      - backend
+
+  flower:
+    image: arkpz-pzpi-22-2-iuklenchuk-roman-task3-backend
+    container_name: "flower"
+    command: ["celery", "-A", "app.celery", "flower", "--loglevel=info", "--port=5555"]
+    environment:
+      - FLOWER_BROKER=redis://redis:6379/0
+    env_file:
+      - .env
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - backend
+    networks:
+      - app-network
+
+
+  redis:
+    image: "redis:latest"
+    container_name: "redis"
+    ports:
+      - "6379:6379"
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
