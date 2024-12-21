@@ -9,7 +9,11 @@ class RentalResponseSchema(BaseModel):
     end_date: date
     total_price: float
     status: str
-    
+
+class LockResponseSchema(BaseModel):
+    id: int
+    warehouse_id: int
+    access_key: str
 
 class UserUpdateSchema(BaseModel):
     username: Optional[str] = None

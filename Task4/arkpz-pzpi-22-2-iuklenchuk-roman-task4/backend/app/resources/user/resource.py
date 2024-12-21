@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.database import get_db
 from app.utils.auth import Authorization
 from app.resources._shared.query import update_model
-from app.database.models import Warehouse, Rental, User, UserRole
+from app.database.models import Warehouse, Rental, User, UserRole, Lock, RentalStatus
 
-from .schemas import RentalResponseSchema, UserResponseSchema, UserUpdateSchema
+from .schemas import RentalResponseSchema, UserResponseSchema, UserUpdateSchema, LockResponseSchema
 
 
 user_router = APIRouter(prefix="/users", tags=["users"])
@@ -68,6 +68,31 @@ async def get_my_rent(rent_id: int, user=Depends(Authorization()), db=Depends(ge
     )
 
 
+@user_router.get("/my_locks", response_model=list[LockResponseSchema])
+async def get_my_locks(user=Depends(Authorization()), db=Depends(get_db)):
+    query = select(Rental).filter(Rental.user_id == user.id, Rental.status == RentalStatus.RESERVED)
+    rental_result = await db.execute(query)
+    rental = rental_result.scalars().all()
+    warehouse_ids = [rent.warehouse_id for rent in rental]
+    if not rental:
+        raise HTTPException(
+            status_code=404,
+            detail="Rental not found"
+        )
+
+    warehouse_query = select(Warehouse).filter(
+        Warehouse.id.in_(warehouse_ids))
+    warehouse_result = await db.execute(warehouse_query)
+    warehouse = warehouse_result.scalars().all()
+    warehouse_ids = [ware.id for ware in warehouse]
+    
+    lock_query = select(Lock).filter(Lock.warehouse_id.in_(warehouse_ids))
+    lock_result = await db.execute(lock_query)
+    locks = lock_result.scalars().all()
+
+    return locks
+
+
 @user_router.put("/me", response_model=UserResponseSchema)
 async def update_user_info(user_data: UserUpdateSchema, user=Depends(Authorization()), db=Depends(get_db)):
     update_model(user, user_data.dict(exclude_unset=True))
@@ -109,7 +134,7 @@ async def block_user(user_id: int, db=Depends(get_db), user=Depends(Authorizatio
         
     user.is_blocked = True
     
-    user_warehouses = get_user_warehouses(db, user)
+    user_warehouses = await get_user_warehouses(db, user)
     for warehouse in user_warehouses:
         warehouse.is_blocked = True
     await db.commit()
@@ -130,7 +155,7 @@ async def unblock_user(user_id: int, db=Depends(get_db), user=Depends(Authorizat
         
     user.is_blocked = False
     
-    user_warehouses = get_user_warehouses(db, user)
+    user_warehouses = await get_user_warehouses(db, user)
     for warehouse in user_warehouses:
         warehouse.is_blocked = False
     await db.commit()

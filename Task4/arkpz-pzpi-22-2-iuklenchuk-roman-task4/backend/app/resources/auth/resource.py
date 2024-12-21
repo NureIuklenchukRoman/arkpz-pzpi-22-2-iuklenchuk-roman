@@ -95,7 +95,15 @@ async def refresh_token(refresh_token: str, db: AsyncSession = Depends(get_db)):
 
 
 @auth_router.post("/restore-password")
-async def restore_password(db: AsyncSession = Depends(get_db), user = Depends(Authorization())):
+async def restore_password(email: str,  db: AsyncSession = Depends(get_db)):
+    query = select(User).filter(User.email == email)
+    result = await db.execute(query)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User with this email not found"
+        )
     new_pass = generate_random_password()
     user.password = hash_password(new_pass)
     
