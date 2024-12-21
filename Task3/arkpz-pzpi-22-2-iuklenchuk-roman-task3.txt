@@ -1,0 +1,232 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+
+Кафедра програмної інженерії
+
+Звіт
+З лабораторної роботи №3
+З дисципліни «Аналіз та рефакторинг коду»
+на тему: «РОЗРОБКА БІЗНЕС-ЛОГІКИ ТА ФУНКЦІЙ АДМІНІСТРУВАННЯ СЕРВЕРНОЇ ЧАСТИНИ ПРОГРАМНОЇ СИСТЕМИ »
+
+Виконавець:		
+ст. гр. ПЗПІ-22-2						                    Юкленчук Р. О. 
+
+Перевірив:		
+ст. викладач кафедри ПІ				                    Сокорчук І. П. 
+	
+
+
+                                                                                                       
+
+
+
+
+
+
+
+
+Харків 2024
+1 МЕТА РОБОТИ
+
+     Метою роботи є розробка  бізнес-логіки та функцій адміністрування для серверної частини програмної системи.
+
+2 ХІД РОБОТИ
+
+     В ході виконання лабораторної роботи було впроваджено ряд функцій, які охоплюють основні аспекти адміністрування, безпеки та аналізу даних. Опис інженерних рішень включає:
+     * Система передбачає можливість зміни пароля при умові що користувач аутентифікований, та скидання пароля, якщо юзер його забув, та надсилання нового паролю на пошту.
+     * Для забезпечення захисту даних користувачей, паролі зберігаються зашифрованими за допомогою модулю bcrypt.
+     * Система авторизації реалізована використовуючи jwt токени.
+     * Також кожному користувачу належить роль, завдяки якій йому буде доступен певний функціонал системи.
+     * Система включає в себе нотифікацію користувачів при оренді складу з повідомленням що його було орендовано, а також система автоматично надсилає повідомлення коли оренда майже сплила.
+     * Функціонал оренди складу, при умові що він доступний та не заблокований, при успішній оренді користувачу надається ключ для відкриття замку складу, який також отримує цей код.
+     * Функціонал адміністрування було розширено завдяки надання можливості блокування користувачів адміністраторами. Це означає наступне:
+          1. Якщо заблокований був продавець, то всі його склади блокуються, і користувачі не можуть їх орендувати та бачити в пошуку, також він не може створювати нові склади, та видаляти старі.
+          2. Якщо ж заблокований був покупець, то він не має можливості орендувати нові склади.
+          3. Також адміністратори можуть розблокувати користувача, та відмінити блокування оренди та складів.
+     * Одним із ключових компонентів системи став модуль аналізу даних складів для продавців, які вони мають у своєму володінні:
+          1. Повна виручка за весь час по усім складам.
+          2. Середня тривалість оренди, отримання усіх оренд по складам які належать певному продавцю та знайти середню тривалість оренди.
+          3. Середня виручка за склад.
+          4. Обчислення відсоткової зміни між кожним роком і попереднім. Це дає темп зростання доходу за кожний рік порівняно з попереднім.
+          5. Топ 5 складів з найбільшим прибутком.
+
+
+3 ВИСНОВКИ
+
+     Під час виконання лабораторної роботи було досягнуто значного прогресу в розвитку функціональних можливостей програмної системи. Реалізовані рішення охоплюють критичні аспекти адміністрування, безпеки та аналітики даних, що значно підвищує ефективність та зручність користування системою. 
+     Забезпечення надійного зберігання паролів за допомогою шифрування модулем bcrypt гарантує високий рівень захисту даних користувачів. Механізми зміни та скидання пароля покращують зручність користування, надаючи користувачам можливість швидко відновити доступ до своїх облікових записів. 
+     Використання JWT токенів для авторизації забезпечує безпечний і ефективний доступ до системи. Впровадження ролей користувачів дозволяє гнучко керувати доступом до різних функцій системи, що підвищує її надійність та масштабованість.
+     Система нотифікацій покращує комунікацію з користувачами, забезпечуючи своєчасне інформування про оренду та завершення терміну оренди складів. Розширення функціоналу адміністрування дозволяє адміністраторам ефективно керувати користувачами, блокувати та розблоковувати їхні облікові записи та склади.
+     Інструменти аналітики надають продавцям можливість глибокого аналізу даних, що допомагає оцінювати прибутковість складів та приймати обґрунтовані бізнес-рішення. Аналіз виручки, тривалості оренди та темпів зростання доходу сприяє оптимізації бізнес-процесів та підвищенню прибутковості.
+ДОДАТОК А
+UML діаграма діяльності
+
+
+Рисунок А.1 – Блокування користувачів
+
+
+Рисунок А.2 – Бронювання складу
+
+Рисунок А.3 – Аналіз прибутку складів
+
+
+ДОДАТОК Б
+UML діаграма взаємодії
+
+
+Рисунок Б.1 – Блокування користувача
+ДОДАТОК В
+Фрагмент програмного коду (математичних методів обробки даних) серверної частини
+
+  1 import pandas as pd
+  2 from sqlalchemy import select, func
+  3 from sqlalchemy.ext.asyncio import AsyncSession
+  4 from app.database.models import Warehouse, Rental
+  5 
+  6 
+  7 async def check_warehouse_owner(db, user, id):
+  8     query = select(Warehouse).filter(Warehouse.id == id)
+  9     result = await db.execute(query)
+ 10     warehouse = result.scalars().first()
+ 11     if warehouse.owned_by != user.id:
+ 12         return False
+ 13     return True
+ 14 
+ 15 
+ 16 async def get_rental_data(db: AsyncSession, user):
+ 17     result = await db.execute(select(Rental))
+ 18     rentals = result.scalars().all()
+ 19 
+ 20     data = []
+ 21     for rental in rentals:
+ 22         if await check_warehouse_owner(db, user, rental.warehouse_id):
+ 23             data.append({
+ 24                 "user_id": rental.user_id,
+ 25                 "warehouse_id": rental.warehouse_id,
+ 26                 "start_date": rental.start_date,
+ 27                 "end_date": rental.end_date,
+ 28                 "total_price": rental.total_price
+ 29             })
+ 30 
+ 31     df = pd.DataFrame(data)
+ 32 
+ 33     if df.empty:
+ 34         return df
+ 35 
+ 36     df['start_date'] = pd.to_datetime(df['start_date'])
+ 37     df['end_date'] = pd.to_datetime(df['end_date'])
+ 38 
+ 39     return df
+ 40 
+ 41 
+ 42 async def total_revenue(db: AsyncSession, user):
+ 43     data = await get_rental_data(db, user)
+ 44     if data.empty:
+ 45         return 0.0
+ 46     return data['total_price'].sum()
+ 47 
+ 48 
+ 49 async def revenue_growth_rate(db: AsyncSession, user):
+ 50     data = await get_rental_data(db, user)
+ 51     if data.empty:
+ 52         return 0.0
+ 53 
+ 54     data['year'] = data['start_date'].dt.year
+ 55     yearly_revenue = data.groupby('year')['total_price'].sum()
+ 56     growth_rate = yearly_revenue.pct_change().fillna(0) * 100
+ 57 
+ 58     return growth_rate.to_dict()
+ 59 
+ 60 
+ 61 async def average_rental_duration(db: AsyncSession, user):
+ 62     data = await get_rental_data(db, user)
+ 63     if data.empty:
+ 64         return 0.0
+ 65     return (data['end_date'] - data['start_date']).dt.days.mean()
+ 66 
+ 67 
+ 68 async def revenue_per_warehouse(db: AsyncSession, user):
+ 69     data = await get_rental_data(db, user)
+ 70     if data.empty:
+ 71         return 0.0
+ 72 
+ 73     revenue_per_warehouse = data.groupby(
+ 74         'warehouse_id')['total_price'].sum().mean()
+ 75     return revenue_per_warehouse
+ 76 
+ 77 
+ 78 async def top_performing_warehouses(db: AsyncSession, user):
+ 79     data = await get_rental_data(db, user)
+ 80     if data.empty:
+ 81         return []
+ 82 
+ 83     top_warehouses = data.groupby('warehouse_id')[
+ 84         'total_price'].sum().nlargest(5)
+ 85     return top_warehouses.index.tolist()
+ 86 
+ 87 
+ 88 async def generate_report(db: AsyncSession, user):
+ 89     report = {
+ 90         "total_revenue": await total_revenue(db, user),
+ 91         "average_rental_duration": await average_rental_duration(db, user),
+ 92         "revenue_per_warehouse": await revenue_per_warehouse(db, user),
+ 93         "revenue_growth_rate": await revenue_growth_rate(db, user),
+ 94         "top_performing_warehouses": await top_performing_warehouses(db, user),
+ 95     }
+ 96     return report
+
+Фрагмент коду адміністурвання серверної частини
+
+  1 async def get_user_warehouses(db, user):
+  2     user_warehouses_query = select(Warehouse).filter(Warehouse.owned_by == user.id)
+  3     user_warehouses_result = await db.execute(user_warehouses_query)
+  4     user_warehouses = user_warehouses_result.scalars().all()
+  5     return user_warehouses
+  6 
+  7 
+  8 @user_router.get("/block_user", response_model=UserResponseSchema)
+  9 async def block_user(user_id: int, db=Depends(get_db), user=Depends(Authorization(allowed_roles=[UserRole.ADMIN]))):
+ 10     query = select(User).filter(User.id == user_id)
+ 11     result = await db.execute(query)
+ 12     user = result.scalars().first()
+ 13     
+ 14     if not user:
+ 15         raise HTTPException(
+ 16             status_code=404,
+ 17             detail="User not found"
+ 18         )
+ 19         
+ 20     user.is_blocked = True
+ 21     
+ 22     user_warehouses = get_user_warehouses(db, user)
+ 23     for warehouse in user_warehouses:
+ 24         warehouse.is_blocked = True
+ 25     await db.commit()
+ 26     return user
+ 27 
+ 28 
+ 29 @user_router.get("/unblock_user", response_model=UserResponseSchema)
+ 30 async def unblock_user(user_id: int, db=Depends(get_db), user=Depends(Authorization(allowed_roles=[UserRole.ADMIN]))):
+ 31     query = select(User).filter(User.id == user_id)
+ 32     result = await db.execute(query)
+ 33     user = result.scalars().first()
+ 34     
+ 35     if not user:
+ 36         raise HTTPException(
+ 37             status_code=404,
+ 38             detail="User not found"
+ 39         )
+ 40         
+ 41     user.is_blocked = False
+ 42     
+ 43     user_warehouses = get_user_warehouses(db, user)
+ 44     for warehouse in user_warehouses:
+ 45         warehouse.is_blocked = False
+ 46     await db.commit()
+ 47     return user
+
+ДОДАТОК Г
+Відео-посилання на Youtube
+
+Посилання: https://youtu.be/ZjWylMSav7A
+
