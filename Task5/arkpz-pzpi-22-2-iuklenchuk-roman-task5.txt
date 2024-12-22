@@ -1,0 +1,167 @@
+﻿Міністерство освіти і науки України
+Харківський національний університет радіоелектроніки
+
+Кафедра програмної інженерії
+
+Звіт
+З лабораторної роботи №5
+З дисципліни «РОЗГОРТАННЯ ПРОГРАМНОЇ СИСТЕМИ ТА ДЕМОНСТРАЦІЯ ЇЇ РОБОТИ»
+
+Виконавець:		
+ст. гр. ПЗПІ-22-2						                    Юкленчук Р. О. 
+
+Перевірив:		
+ст. викладач кафедри ПІ				                    Сокорчук І. П. 
+	
+
+
+                                                                                                       
+
+
+
+
+
+
+
+
+
+
+Харків 2024
+1 МЕТА РОБОТИ
+
+     Розгорнути програмну систему у середовищі Docker, перевірити її функціональність та продемонструвати роботу основних компонентів системи.
+     
+2 ХІД РОБОТИ
+
+     В ході виконання лабораторної роботи було Підготовлено середовище для розгортання програмної системи, забезпечено всі необхідні налаштування для коректної роботи компонентів:
+        * Налаштовано середовище для розгортання програмної системи. Розгорнуто основні компоненти, включаючи базу даних, серверну частину та допоміжні сервіси, що забезпечують їхню взаємодію.
+        * Реалізовано взаємодію IoT клієнта із серверною частиною через  для передачі даних та виконання запитів.
+        * Перевірено працездатність системи, проведено тестування функціональності відповідно до вимог. Продемонстровано роботу основних функцій, зокрема бізнес-логіки, адміністрування та взаємодії IoT клієнта із сервером.
+
+3 ВИСНОВКИ
+
+     У ході виконання лабораторної роботи було успішно розгорнуто програмну систему, налаштовано її компоненти та перевірено відповідність функціональності заявленим вимогам. Забезпечено стабільну роботу серверної частини, бази даних та IoT клієнта, а також їхню коректну взаємодію.
+     Особливу увагу приділено налаштуванню середовища розгортання, що дозволило досягти високої стабільності та надійності роботи системи. Реалізована функціональність підтвердила здатність системи обробляти дані з IoT пристроїв, передавати їх на сервер і виконувати необхідну бізнес-логіку.
+     Виконане тестування продемонструвало готовність системи до практичного використання, а також її відповідність критеріям надійності, інтегрованості та функціональності. Досвід, отриманий під час виконання роботи, є важливим для подальшого впровадження подібних рішень у реальних проєктах.
+ДОДАТОК A
+Фрагмент програмного коду Dockerfile для розгортання
+
+1  FROM python:3.11
+2  RUN apt-get update && apt-get install
+3  WORKDIR /app
+4  COPY requirements.txt .
+5  RUN pip install -r requirements.txt
+6  COPY . /app/
+7  EXPOSE 8000
+8  CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+Фрагмент програмного коду для розгортання контейнерів
+1  version: '3.8'
+2  
+3  services:
+4    database:
+5      image: postgres:15-alpine
+6      container_name: database
+7      env_file:
+8        - .env
+9      ports:
+10       - "5432:5432"
+11      networks:
+12       - app-network
+13      volumes:
+14       - postgres_data:/var/lib/postgresql/data
+15  
+16   backend:
+17     build: ./backend 
+18     volumes:
+19       - ./backend:/app  
+20     ports:
+21       - "8000:8000"
+22     env_file:
+23       - .env
+24     depends_on:
+25       - database
+26     networks:
+27       - app-network
+28  
+29   pgadmin:
+30     container_name: pgadmin
+31     image: dpage/pgadmin4
+32     ports:
+33       - 333:80
+34     depends_on:
+35       - database
+36     volumes:
+37       - ./pgadmin-servers.json:/pgadmin4/servers.json:ro
+38     environment:
+39       PGADMIN_DEFAULT_EMAIL: admin@admin.com
+40       PGADMIN_DEFAULT_PASSWORD: admin
+41     networks:
+42       - app-network
+43  
+44   celery_worker:
+45     image: arkpz-pzpi-22-2-iuklenchuk-roman-task5-backend
+46     container_name: "celery-worker"
+47     command: ["celery", "-A", "app.celery", "worker", "--loglevel=info"]
+48     environment:
+49       - CELERY_BROKER_URL=redis://redis:6379/0
+50       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+51     env_file:
+52       - .env
+53     networks:
+54       - app-network
+55     depends_on:
+56       - backend
+57       - redis
+58  
+59   celery_beat:
+60     image: arkpz-pzpi-22-2-iuklenchuk-roman-task5-backend
+61     container_name: "celery-beat"
+62     command: ["celery", "-A", "app.celery", "beat", "--loglevel=info"]
+63     environment:
+64       - CELERY_BROKER_URL=redis://redis:6379/0
+65       - CELERY_RESULT_BACKEND=redis://redis:6379/0
+66     env_file:
+67       - .env
+68     networks:
+69       - app-network
+70     depends_on:
+71       - redis
+72       - backend
+73  
+74   flower:
+75     image: arkpz-pzpi-22-2-iuklenchuk-roman-task5-backend
+76     container_name: "flower"
+77     command: ["celery", "-A", "app.celery", "flower", "--loglevel=info", "--port=5555"]
+78     environment:
+79       - FLOWER_BROKER=redis://redis:6379/0
+80     env_file:
+81       - .env
+82     ports:
+83       - "5555:5555"
+84     depends_on:
+85       - redis
+86       - backend
+87     networks:
+88       - app-network
+89  
+90   redis:
+91     image: "redis:latest"
+92     container_name: "redis"
+93     ports:
+94       - "6379:6379"
+95     networks:
+96       - app-network
+97  
+98  volumes:
+99    postgres_data:
+100 
+101 networks:
+102   app-network:
+103     driver: bridge
+ДОДАТОК Б
+Відео-посилання на Youtube
+
+Посилання: https://youtu.be/d_xoXDow8m8
+
+
