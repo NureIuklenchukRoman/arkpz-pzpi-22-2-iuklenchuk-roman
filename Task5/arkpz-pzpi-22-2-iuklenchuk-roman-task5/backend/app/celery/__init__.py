@@ -1,2 +1,2 @@
-from .calery_app import celery_app
-# from .periodic_task import setup_periodic_tasks
+from .celery_app import celery_app
+from .periodic_task import setup_periodic_tasks

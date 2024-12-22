@@ -21,9 +21,9 @@ async def check_lock_owner(db, lock, user):
 locks_router = APIRouter(prefix="/locks", tags=["locks"])
 
 
-@locks_router.get("/{lock_id}/{lock_ip}", response_model=LockResponseSchema)
-async def get_lock(lock_id: int, lock_ip: str, db=Depends(get_db)):
-    query = select(Lock).filter(Lock.id == lock_id, Lock.ip == lock_ip)
+@locks_router.get("/{lock_id}", response_model=LockResponseSchema)
+async def get_lock(lock_id: int, db=Depends(get_db)):
+    query = select(Lock).filter(Lock.id == lock_id)
     result = await db.execute(query)
     lock = result.scalars().first()
     
@@ -33,9 +33,9 @@ async def get_lock(lock_id: int, lock_ip: str, db=Depends(get_db)):
     return lock
 
 
-@locks_router.post("/unlock/{lock_id}/{lock_ip}")
-async def get_unlock_lock(lock_id: int, lock_ip: str, key: LockUnlockSchema,db=Depends(get_db)):
-    query = select(Lock).filter(Lock.id == lock_id, Lock.ip == lock_ip)
+@locks_router.post("/unlock/{lock_id}")
+async def get_unlock_lock(lock_id: int, key: LockUnlockSchema,db=Depends(get_db)):
+    query = select(Lock).filter(Lock.id == lock_id)
     result = await db.execute(query)
     lock = result.scalars().first()
     

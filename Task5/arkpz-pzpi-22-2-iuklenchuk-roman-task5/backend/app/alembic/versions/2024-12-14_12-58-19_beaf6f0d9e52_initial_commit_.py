@@ -77,7 +77,7 @@ def upgrade() -> None:
     sa.Column('start_date', sa.Date(), nullable=False),
     sa.Column('end_date', sa.Date(), nullable=False),
     sa.Column('total_price', sa.Float(), nullable=False),
-    sa.Column('status', sa.Enum('RESERVED', 'COMPLETED', 'CANCELLED', name='rentalstatus'), nullable=True),
+    sa.Column('status', sa.Enum('RESERVED', 'ONGOING', 'COMPLETED', 'CANCELLED', name='rentalstatus'), nullable=True),
     sa.Column('selected_services', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name='fk_rental_user'),
     sa.ForeignKeyConstraint(['warehouse_id'], ['warehouses.id'], name='fk_rental_warehouse'),

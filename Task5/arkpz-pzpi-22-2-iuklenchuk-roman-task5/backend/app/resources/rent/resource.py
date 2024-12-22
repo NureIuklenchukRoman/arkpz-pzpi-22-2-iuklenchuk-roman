@@ -9,7 +9,7 @@ from app.database import get_db
 from app.utils.auth import Authorization
 from app.database.models import Warehouse, Rental, RentalStatus, PremiumService, Message, Lock, UserRole, User
 
-from .tasks import send_email
+from app.utils.email import send_email
 from .schemas import RentWarehouseSchema, WarehouseDetails, RentalResponseSchema
 
 
@@ -84,8 +84,6 @@ async def rent_warehouse(warehouse_id: int,
             status_code=404,
             detail="Lock warehouse not found"
         )
-
-    lock.access_key = str(random.randint(10**9, 10**10 - 1))
     
     message_text = f"""Warehouse {warehouse.name} has been reserved successfully, 
                     from {warehouse_data.start_date} to {warehouse_data.end_date},

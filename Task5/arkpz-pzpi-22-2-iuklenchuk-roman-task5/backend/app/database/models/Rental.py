@@ -8,6 +8,7 @@ from ..base_model import Base
 
 class RentalStatus(PyEnum):
     RESERVED = "reserved"
+    ONGOING = "ongoing"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
 

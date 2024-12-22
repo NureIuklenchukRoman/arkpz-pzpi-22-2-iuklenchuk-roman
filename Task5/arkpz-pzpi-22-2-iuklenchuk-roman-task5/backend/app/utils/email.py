@@ -25,7 +25,7 @@ def send_email(self, user_id, text, subject):
     msg['To'] = user_email
     msg['Subject'] = subject
     msg.attach(MIMEText(text, 'plain'))
-
+    print("ok")
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()

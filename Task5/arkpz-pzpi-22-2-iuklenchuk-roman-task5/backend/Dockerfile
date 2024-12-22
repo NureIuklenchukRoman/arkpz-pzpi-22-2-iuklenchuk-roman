@@ -1,7 +1,6 @@
 # Use the Python 3.11 base image
 FROM python:3.11
-RUN apt-get update && apt-get install -y curl npm
-RUN npm install -g ngrok
+RUN apt-get update && apt-get install
 # Set the working directory inside the container to /code
 WORKDIR /app
 
